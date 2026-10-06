@@ -106,3 +106,21 @@ def test_qq_points_are_sorted_and_matched():
     assert np.all(np.diff(sample) >= 0)
     assert np.all(np.diff(theoretical) > 0)
     assert theoretical.size == sample.size
+
+
+@pytest.mark.validation
+def test_ewma_standardization_removes_volatility_clustering():
+    """Normal shocks with GARCH(1,1) volatility look fat-tailed overall, but become close
+    to standard normal once each return is divided by its EWMA volatility forecast."""
+    rng = np.random.default_rng(7)
+    n, alpha, beta = 20_000, 0.06, 0.93
+    omega = 1e-4 * (1 - alpha - beta)
+    x = np.empty(n)
+    variance = 1e-4
+    for t in range(n):
+        x[t] = np.sqrt(variance) * rng.standard_normal()
+        variance = omega + alpha * x[t] ** 2 + beta * variance
+    assert rt.moments(x)["excess_kurtosis"] > 1.0
+    z = rt.ewma_standardize(x, decay=0.94)
+    assert z.std() == pytest.approx(1.0, abs=0.05)
+    assert abs(rt.moments(z)["excess_kurtosis"]) < 0.3

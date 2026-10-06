@@ -41,6 +41,7 @@ bootstrap), `tax` (German fund taxation), `plotting` (figure style).
 - `notebooks/`: worked examples that import from the package; they write the figures in
   `docs/figures/`
 - `docs/`: methodology and figures
+- `scripts/site_charts.py`: regenerates the charts on the project page of aperret04.github.io
 - `data/`: local download cache (git-ignored)
 
 ## Commands

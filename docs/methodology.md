@@ -49,6 +49,9 @@ government bond ETFs over the overlapping period (correlation, tracking error, b
   $\hat\alpha^{-1} = \frac{1}{k}\sum_{i=1}^{k} \ln X_{(i)} - \ln X_{(k+1)}$.
 * Lo and MacKinlay (1988) variance-ratio test with overlapping observations and the
   heteroskedasticity-robust statistic $z^*(q)$. For AR(1) returns, $VR(2) = 1 + \rho_1$.
+* Volatility clustering check: each return is divided by its exponentially weighted volatility
+  forecast, $s^2_t = \lambda s^2_{t-1} + (1-\lambda) r^2_{t-1}$ with $\lambda = 0.94$
+  (RiskMetrics, 1996). Fat tails that remain afterwards are not explained by clustering.
 
 ## Risk (`risk`)
 
@@ -126,28 +129,37 @@ with circular sample autocovariances.
 * **Plan.** Monthly contributions (optionally indexed to inflation) followed by inflation-indexed
   withdrawals, either a fixed amount or a fraction of wealth at the start of the withdrawal phase.
   A path fails if a withdrawal cannot be paid in full.
-* **German taxation** of an accumulating fund (Investment Tax Act, InvStG 2018): flat tax 26.375 %
-  (25 % plus solidarity surcharge, no church tax); partial exemption 30 % / 15 % / 0 % for equity /
-  mixed / other funds; saver's allowance EUR 1,000 per year; annual Vorabpauschale
+* **German taxation** of an accumulating fund (Investment Tax Act, InvStG 2018): flat tax 26.375%
+  (25% plus solidarity surcharge, no church tax); partial exemption 30% / 15% / 0% for equity /
+  mixed / other funds; saver's allowance €1,000 per year; annual Vorabpauschale
   $\min(0.7 \cdot \text{base rate} \cdot P_{start},\ \max(P_{end} - P_{start}, 0))$ per unit, reduced
-  by 1/12 per full month before purchase; Vorabpauschalen credited against gains on sale; FIFO with
-  one lot per purchase year; losses carried forward. Taxes are paid from the portfolio by default.
+  by 1/12 per full month before purchase and deemed received on the first working day of the
+  following year, so it is taxed with that year's income and allowance; Vorabpauschalen credited
+  against gains on sale; FIFO with one lot per purchase year; losses carried forward. Taxes are
+  paid from the portfolio by default. A portfolio of separate equity and bond ETFs is modelled as
+  one fund with partial exemption $0.30 \times$ equity share.
 * **Safe withdrawal rate:** root search on the success rate using common random numbers.
 
 ## Limitations
 
-* **Sample length.** About 27 years of monthly data contain few independent bear markets. Long
-  horizon statistics (multi-year volatility scaling, strategy comparisons, safe withdrawal rates)
-  carry wide uncertainty.
+* **One history.** All projections resample about 27 years of monthly data, which contain only a
+  few independent bear markets. One percentage point less return a year lowers the median savings
+  result by about 14% and the 4% rule's 30-year success from 84% to 71%
+  ([notebook 7](../notebooks/07_montecarlo.ipynb)). Long-horizon numbers are scenarios, not
+  forecasts.
 * **Proxies.** Index proxies carry no fund costs; the bond proxy approximates the par yield with a
   spot rate; the cash rate is a monthly average.
 * **Selection.** The five single stocks were chosen with knowledge of the present; any named stock
   basket is subject to selection and survivorship bias.
-* **Tax model.** A planning simplification: portfolio-level partial exemption for mixed
-  allocations, annual FIFO lots, no church tax, no personal tax-rate option
-  (Günstigerprüfung), and a constant base rate (Basiszins). Not tax advice.
-* **Costs.** Proportional transaction costs only; no bid-ask spread modelling, taxes in backtests,
-  or market impact.
+* **Tax model.** A planning simplification: one blended partial exemption per portfolio instead of
+  per-fund taxation, annual FIFO lots, no church tax, no personal tax-rate option
+  (Günstigerprüfung), and a constant base rate (Basiszins), although the real base rate was zero in
+  2021 and 2022. Not tax advice.
+* **Backtests ignore taxes.** Strategy comparisons are pre-tax. In a taxable account, high-turnover
+  strategies such as trend following realise gains every year and lose part of their advantage.
+* **Unconditional risk models.** VaR and the Monte Carlo models do not forecast volatility from
+  recent data, as GARCH or EWMA models would; clustering is only measured (notebook 2).
+* **Costs.** Proportional transaction costs only; no bid-ask spread or market-impact modelling.
 
 ## References
 
@@ -161,6 +173,7 @@ with circular sample autocovariances.
 * Fama, E. F. and French, K. R. (2015). A five-factor asset pricing model. *Journal of Financial Economics*, 116(1).
 * Griveau-Billion, T., Richard, J.-C. and Roncalli, T. (2013). A fast algorithm for computing high-dimensional risk parity portfolios. SSRN.
 * Hill, B. M. (1975). A simple general approach to inference about the tail of a distribution. *Annals of Statistics*, 3(5).
+* J.P. Morgan and Reuters (1996). *RiskMetrics Technical Document*, 4th edition.
 * Kupiec, P. H. (1995). Techniques for verifying the accuracy of risk measurement models. *Journal of Derivatives*, 3(2).
 * Ledoit, O. and Wolf, M. (2004). A well-conditioned estimator for large-dimensional covariance matrices. *Journal of Multivariate Analysis*, 88(2).
 * Lo, A. W. (2002). The statistics of Sharpe ratios. *Financial Analysts Journal*, 58(4).
@@ -168,6 +181,7 @@ with circular sample autocovariances.
 * Magdon-Ismail, M., Atiya, A. F., Pratap, A. and Abu-Mostafa, Y. S. (2004). On the maximum drawdown of a Brownian motion. *Journal of Applied Probability*, 41(1).
 * McNeil, A. J., Frey, R. and Embrechts, P. (2015). *Quantitative Risk Management*, revised edition. Princeton University Press.
 * Merton, R. C. (1972). An analytic derivation of the efficient portfolio frontier. *Journal of Financial and Quantitative Analysis*, 7(4).
+* Mertens, E. (2002). Comments on variance of the IID estimator in Lo (2002). Working paper, University of Basel.
 * Newey, W. K. and West, K. D. (1987). A simple, positive semi-definite, heteroskedasticity and autocorrelation consistent covariance matrix. *Econometrica*, 55(3).
 * Newey, W. K. and West, K. D. (1994). Automatic lag selection in covariance matrix estimation. *Review of Economic Studies*, 61(4).
 * Politis, D. N. and Romano, J. P. (1994). The stationary bootstrap. *Journal of the American Statistical Association*, 89(428).

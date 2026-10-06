@@ -13,12 +13,19 @@ for an accumulating ETF held in a taxable account:
 * **Advance lump sum** (Vorabpauschale): accumulating funds are taxed each year
   on ``70 % x base rate x price at the start of the year``, capped at the
   year's actual price increase. Units bought during the year count 1/12 less
-  for each full month before purchase. Vorabpauschalen already taxed are
+  for each full month before purchase. The amount is deemed received on the
+  first working day of the following year, so it is taxed in, and uses the
+  allowance of, that following year. Vorabpauschalen already taxed are
   deducted from the gain when units are sold.
 * **FIFO**: units are deemed sold in the order they were bought.
 
 The base rate (Basiszins) is published annually by the Federal Ministry of
 Finance; the default here is an assumed long-run value.
+
+Portfolios of several funds are modelled as one fund with a blended partial
+exemption (see :func:`blended_partial_exemption`); the tax of separately held
+funds differs slightly because each fund's gains and Vorabpauschale are capped
+and taxed on their own.
 
 This module is a simplified model for planning purposes, not tax advice.
 """
@@ -30,6 +37,18 @@ import numpy as np
 EQUITY_FUND = 0.30
 MIXED_FUND = 0.15
 OTHER_FUND = 0.0
+
+
+def blended_partial_exemption(equity_share: float) -> float:
+    """Approximate partial exemption of a portfolio of separate equity and bond ETFs.
+
+    An equity ETF is 30 % exempt, a bond ETF 0 %, so a portfolio holding
+    ``equity_share`` in equity ETFs is approximately ``0.30 * equity_share`` exempt
+    (18 % for 60/40). A *single* mixed fund would instead get the fixed 15 %.
+    """
+    if not 0.0 <= equity_share <= 1.0:
+        raise ValueError("equity_share must be between 0 and 1")
+    return EQUITY_FUND * equity_share
 
 
 @dataclass(frozen=True)

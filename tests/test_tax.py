@@ -41,3 +41,11 @@ def test_tax_due_applies_carryforward_then_allowance():
     due, carry = rules.tax_due(np.array([3000.0, 500.0, -200.0]), np.array([-500.0, 0.0, 0.0]))
     np.testing.assert_allclose(due, [0.26375 * 1500.0, 0.0, 0.0])
     np.testing.assert_allclose(carry, [0.0, 0.0, -200.0])
+
+
+def test_blended_partial_exemption():
+    assert tax.blended_partial_exemption(1.0) == pytest.approx(tax.EQUITY_FUND)
+    assert tax.blended_partial_exemption(0.6) == pytest.approx(0.18)
+    assert tax.blended_partial_exemption(0.0) == 0.0
+    with pytest.raises(ValueError):
+        tax.blended_partial_exemption(1.2)

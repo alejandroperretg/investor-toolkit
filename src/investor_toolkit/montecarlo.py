@@ -297,6 +297,9 @@ def simulate(
     tax = plan.tax
     realized = np.zeros(n_paths)  # taxable realised gains of the current year
     carry = np.zeros(n_paths)  # loss carryforward (<= 0)
+    # Last year's Vorabpauschale (after partial exemption). It is deemed received on the first
+    # working day of the following year, so it is taxed with, and uses the allowance of, that year.
+    pending_vp = np.zeros(n_paths)
     real_withdrawal = np.full(n_paths, plan.monthly_withdrawal)
 
     for t in range(n_months):
@@ -341,7 +344,8 @@ def simulate(
                 where=lot_weight.sum(axis=1, keepdims=True) > 0,
             )
             prepaid += share * vp_total[:, None]
-            taxable = vp_total * (1.0 - tax.partial_exemption) + realized
+            taxable = pending_vp + realized
+            pending_vp = vp_total * (1.0 - tax.partial_exemption)
             due, carry = tax.tax_due(taxable, carry)
             taxes[:, t] = due
             realized = np.zeros(n_paths)
@@ -355,7 +359,10 @@ def simulate(
     final_value = units.sum(axis=1) * final_price
     if tax is not None:
         _, gain = sell_fifo(units.copy(), cost.copy(), prepaid.copy(), final_value, final_price)
-        liquidation_tax, _ = tax.tax_due(gain * (1.0 - tax.partial_exemption) + realized, carry)
+        # The sale happens in the year after the last year end, together with the
+        # Vorabpauschale deemed received at its start.
+        taxable = gain * (1.0 - tax.partial_exemption) + realized + pending_vp
+        liquidation_tax, _ = tax.tax_due(taxable, carry)
         after_tax = final_value - liquidation_tax
     else:
         after_tax = final_value

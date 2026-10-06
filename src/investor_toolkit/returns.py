@@ -209,6 +209,29 @@ def tail_frequencies(returns: ArrayLike, thresholds=(2.0, 3.0, 4.0, 5.0)) -> pd.
     return pd.DataFrame(rows).T
 
 
+def ewma_standardize(returns: ArrayLike, decay: float = 0.94, warmup: int = 60) -> np.ndarray:
+    """Divide each return by the volatility forecast made before it.
+
+    The forecast is the exponentially weighted moving average of squared returns,
+    ``s2_t = decay * s2_{t-1} + (1 - decay) * r_{t-1}^2`` (RiskMetrics, 1996), started
+    from the sample variance of the first ``warmup`` returns, which are then dropped.
+    If returns are normal with time-varying volatility, the output is close to standard
+    normal: fat tails that remain after this step are not explained by volatility
+    clustering alone. The forecast adapts gradually, so an abrupt jump in volatility
+    produces a few large standardized values before it catches up.
+    """
+    r = np.asarray(returns, dtype=float)
+    r = r[~np.isnan(r)]
+    if r.size <= warmup:
+        raise ValueError("Need more observations than the warm-up length")
+    variance = r[:warmup].var()
+    out = np.empty(r.size - warmup)
+    for i, x in enumerate(r[warmup:]):
+        out[i] = x / np.sqrt(variance)
+        variance = decay * variance + (1.0 - decay) * x * x
+    return out
+
+
 def hill_tail_index(returns: ArrayLike, tail_fraction: float = 0.05, side: str = "left") -> float:
     """Hill estimator of the tail index alpha.
 

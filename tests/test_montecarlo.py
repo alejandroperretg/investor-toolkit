@@ -77,16 +77,21 @@ def test_safe_withdrawal_rate_with_zero_returns_is_one_over_years():
 
 @pytest.mark.validation
 def test_vorabpauschale_and_liquidation_tax_by_hand():
+    """10,000 at 6 % a year for two years. Each year's Vorabpauschale is deemed received
+    in January of the following year: year 1's is taxed at the end of year 2, year 2's
+    together with the sale."""
     monthly = 1.06 ** (1 / 12) - 1
     plan = mc.SavingsPlan(
-        initial=10_000.0, monthly_contribution=0.0, accumulation_years=1, tax=NO_ALLOWANCE
+        initial=10_000.0, monthly_contribution=0.0, accumulation_years=2, tax=NO_ALLOWANCE
     )
     result = mc.simulate(Constant(monthly), plan, n_paths=1)
-    vorabpauschale = 10_000 * 0.7 * 0.025  # 175, below the 600 gain
-    expected_vp_tax = 0.26375 * 0.7 * vorabpauschale
-    assert result.taxes.sum() == pytest.approx(expected_vp_tax)
-    gain_at_sale = 10_600 - 10_000 - vorabpauschale
-    expected_after_tax = 10_600 - 0.26375 * 0.7 * gain_at_sale
+    vp_year1 = 10_000 * 0.7 * 0.025  # 175, below the 600 gain
+    vp_year2 = 10_600 * 0.7 * 0.025  # 185.5, below the 636 gain
+    assert result.taxes[0, 11] == 0.0
+    assert result.taxes[0, 23] == pytest.approx(0.26375 * 0.7 * vp_year1)
+    final = 10_000 * 1.06**2
+    gain_at_sale = final - 10_000 - vp_year1 - vp_year2
+    expected_after_tax = final - 0.26375 * 0.7 * (gain_at_sale + vp_year2)
     assert result.after_tax_value[0] == pytest.approx(expected_after_tax)
 
 
@@ -96,7 +101,7 @@ def test_vorabpauschale_reduced_for_purchases_during_the_year():
     plan = mc.SavingsPlan(
         monthly_contribution=1000.0,
         contributions_indexed=False,
-        accumulation_years=1,
+        accumulation_years=2,
         tax=NO_ALLOWANCE,
     )
     result = mc.simulate(Constant(monthly), plan, n_paths=1)
@@ -105,7 +110,8 @@ def test_vorabpauschale_reduced_for_purchases_during_the_year():
     factors = (12 - np.arange(12)) / 12
     vp_unit = min(0.7 * 0.025 * price[0], price[12] - price[0])
     expected = 0.26375 * 0.7 * vp_unit * np.sum(units * factors)
-    assert result.taxes.sum() == pytest.approx(expected)
+    # Year 1's Vorabpauschale is taxed at the end of year 2.
+    assert result.taxes[0, 23] == pytest.approx(expected)
 
 
 @pytest.mark.validation
