@@ -1,4 +1,4 @@
-"""Generate the inline SVG charts of the project page on aperret04.github.io.
+"""Generate the inline SVG charts of the project page on alejandroperretg.github.io.
 
 The charts are drawn from the toolkit's own output and styled only through CSS classes
 defined in the site's stylesheet, so they follow its light and dark themes:
@@ -10,8 +10,8 @@ defined in the site's stylesheet, so they follow its light and dark themes:
 Each chart replaces the content between ``<!-- chart:NAME -->`` and ``<!-- /chart:NAME -->``
 markers in the given HTML files::
 
-    uv run python scripts/site_charts.py ../aperret04.github.io/work/investor-toolkit.html \
-        ../aperret04.github.io/index.html
+    uv run python scripts/site_charts.py <site-repo>/work/investor-toolkit.html \
+        <site-repo>/index.html
 """
 
 import argparse

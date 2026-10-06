@@ -1,6 +1,6 @@
 # investor-toolkit
 
-[![CI](https://github.com/aperret04/investor-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/aperret04/investor-toolkit/actions/workflows/ci.yml)
+[![CI](https://github.com/alejandroperretg/investor-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/alejandroperretg/investor-toolkit/actions/workflows/ci.yml)
 
 A Python toolkit that answers six questions long-term investors ask, using euro-area market data
 from 1999 to 2026. Every model is first tested on cases with a known answer, the way simulation
@@ -135,7 +135,7 @@ The full list is in [notebook 8](notebooks/08_validation.ipynb). All checks run 
 Requires [uv](https://docs.astral.sh/uv/).
 
 ```
-git clone https://github.com/aperret04/investor-toolkit.git
+git clone https://github.com/alejandroperretg/investor-toolkit.git
 cd investor-toolkit
 uv sync
 uv run pytest                  # offline unit and validation tests
@@ -197,7 +197,7 @@ src/investor_toolkit/
     plotting.py         figure style
 tests/                  unit and validation tests
 notebooks/              worked examples; they generate docs/figures
-scripts/site_charts.py  charts for the project page on aperret04.github.io
+scripts/site_charts.py  charts for the project page on alejandroperretg.github.io
 docs/methodology.md     equations, assumptions, limitations, references
 ```
 
@@ -207,7 +207,7 @@ Equations, assumptions and references are in [docs/methodology.md](docs/methodol
 limitations section matters most: one 27-year history, a simplified tax model, pre-tax backtests
 and risk models that do not forecast volatility.
 
-Project page: [aperret04.github.io/work/investor-toolkit.html](https://aperret04.github.io/work/investor-toolkit.html)
+Project page: [alejandroperretg.github.io/work/investor-toolkit.html](https://alejandroperretg.github.io/work/investor-toolkit.html)
 
 ## License
 
