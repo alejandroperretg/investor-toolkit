@@ -2,14 +2,111 @@
 
 [![CI](https://github.com/aperret04/investor-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/aperret04/investor-toolkit/actions/workflows/ci.yml)
 
-Quantitative tools for long-term investors in EUR, built and tested like engineering simulation
-software: every model is verified against an analytical solution, an exact identity or an
-established reference implementation.
+Quantitative tools for long-term investors in euros, built and tested like engineering simulation
+software: every model is checked against a result it has to reproduce before it is used on
+questions without a known answer.
 
-Each module answers one question an investor actually has:
+> Not investment or tax advice. Results describe historical data (1999 to 2026) and model assumptions.
+
+## At a glance
+
+Six results, each as a concrete euro example. The full derivations are in the
+[notebooks](notebooks); this section is reproduced by [notebook 0](notebooks/00_at_a_glance.ipynb).
+
+### 1. One savings plan has many possible futures
+
+Saving **500 a month for 30 years** (180,000 paid in) in a 60/40 portfolio, after costs and German
+tax, ends at a **median of about 320,000** in today's money. But the range is wide: out of 100
+simulated futures, the worst ends near 130,000 and the best above 750,000, and **6 end below the
+amount paid in** once inflation is accounted for.
+
+![100 futures of the same savings plan](docs/figures/glance_futures.png)
+
+### 2. Crashes are deep, and recovery can take a decade
+
+**10,000 invested in world equities at the August 2000 peak was worth 4,751 in March 2003**. It
+took until February 2013 to get back to 10,000, and it had grown to about 50,600 by 2026. Whoever
+had to sell in 2003 lost half; whoever could wait was rewarded.
+
+![10,000 invested at the 2000 peak](docs/figures/glance_crash.png)
+
+### 3. Extreme days happen far more often than the bell curve says
+
+Daily moves of the MSCI World ETF since 2010, compared with a normal-distribution model:
+
+| Move larger than | Days it happened (17 years) | Normal model: once every |
+|---|---|---|
+| 3 typical days (3 sigma) | 72 | 1.5 years |
+| 4 typical days (4 sigma) | 24 | 63 years |
+| 5 typical days (5 sigma) | 10 | about 7,000 years |
+
+Risk models built on the normal distribution underestimate crashes. In an out-of-sample test, a
+normal-model "1-in-100 months" loss limit was exceeded in 3.7 % of months instead of 1 %.
+
+### 4. Bonds protect against recessions, not against inflation
+
+In 2002 and 2008 German government bonds **rose while stocks fell 30 % and 37 %**. In 2022, when
+inflation pushed interest rates up, **both fell together**: stocks 13 %, bonds 22 %.
+
+![Calendar-year returns of stocks and bonds](docs/figures/glance_bonds.png)
+
+### 5. Spreading risk works, up to a point
+
+A single German blue-chip stock typically swings about 26 % in a year. Five of them together
+swing about 20 %, because they still share one economy. A world index swings about 12 %.
+
+![Volatility of one stock, five stocks and the world index](docs/figures/glance_diversification.png)
+
+### 6. The 4 % rule is optimistic for euro investors
+
+Retire with **500,000** and withdraw a fixed amount, raised with inflation every year. Over 30 years
+of simulated euro-area history, **withdrawing 20,000 a year (4 %) ran out of money in 16 of 100
+histories; 15,000 a year (3 %) in 3 of 100.**
+
+![Withdrawal outcomes in 100 histories](docs/figures/glance_withdrawals.png)
+
+**And a warning about backtests:** a trend-following rule turned 1 euro into 8.0 since 2002, against
+6.8 for buy-and-hold, with smaller crashes. But when the history is reshuffled 2,000 times, it
+comes out behind in about 9 of 100 cases, so the data cannot rule out luck
+([notebook 6](notebooks/06_backtest.ipynb)).
+
+### Terms in one line each
+
+| Term | Meaning |
+|---|---|
+| Volatility | Typical yearly swing. 12 % means that in about two years out of three, the return lands within 12 points of its average. |
+| Drawdown | Fall from the previous high. 10,000 falling to 4,750 is a 52 % drawdown. |
+| Correlation | Whether two assets move together: +1 always together, 0 unrelated, -1 always opposite. |
+| Sigma | The typical size of a move. A 5-sigma day is five times larger than a typical day. |
+| Monte Carlo | Replaying thousands of possible market histories to see the range of outcomes. |
+| Today's money | Amounts divided by cumulative inflation, so they buy what they would buy today. |
+
+## How the models are checked
+
+A simulation is only trusted after it reproduces cases with a known answer, the same way a
+structural solver is first tested on a beam with a textbook solution. Examples:
+
+| Check | Known answer | Code |
+|---|---|---|
+| Mean final wealth of a savings plan under geometric Brownian motion | 51,041 | 50,993 |
+| Simulation error with 4 times more histories | halves (error ~ 1/√N) | slope -0.49 vs -0.50 |
+| Expected maximum drawdown of Brownian motion, √(π/2) | 1.253 | 1.247 |
+| Lifetime German fund tax = flat tax on the total gain | exact | equal to 10 digits |
+| Ledoit-Wolf shrinkage, OLS and Newey-West standard errors | scikit-learn, statsmodels | equal to 8-10 digits |
+| Synthetic Bund returns vs German government bond ETFs | correlation, ordered by duration | 0.95; betas 0.46 / 0.74 / 1.60 |
+
+![Monte Carlo convergence](docs/figures/mc_convergence.png)
+
+The full inventory is in [notebook 8](notebooks/08_validation.ipynb); all checks run in CI on
+every push.
+
+## Modules
+
+Each module answers one investor question:
 
 | Module | Question | Notebook |
 |---|---|---|
+| | The results as euro examples | [00 At a glance](notebooks/00_at_a_glance.ipynb) |
 | `data`, `proxies` | Where do the numbers come from, and what happened before ETFs existed? | [01 Data](notebooks/01_data.ipynb) |
 | `returns` | What do returns look like? | [02 Returns](notebooks/02_returns.ipynb) |
 | `risk` | How bad can it get, and for how long? | [03 Risk](notebooks/03_risk.ipynb) |
@@ -18,66 +115,6 @@ Each module answers one question an investor actually has:
 | `backtest` | Would a strategy have worked, or was it luck? | [06 Backtest](notebooks/06_backtest.ipynb) |
 | `montecarlo`, `tax` | What range of outcomes can a savings plan expect, and how much can be withdrawn? | [07 Monte Carlo](notebooks/07_montecarlo.ipynb) |
 | | How do we know the models are right? | [08 Validation](notebooks/08_validation.ipynb) |
-
-> Not investment or tax advice. Results describe historical data and model assumptions.
-
-## Selected findings
-
-All figures use EUR returns. The long history (from 1999) combines official index data where
-ETFs did not yet exist; see [notebook 1](notebooks/01_data.ipynb) for how the proxies are built
-and validated against real ETFs.
-
-**The ETF era understates risk.** Since 2010 the largest month-end drawdown of a world-equity
-ETF was about 19 %. Over the longer history the same exposure lost 52 % from the 2000 peak and
-took over 12 years to recover in nominal terms.
-
-![Drawdowns](docs/figures/drawdowns.png)
-
-**The stock-bond hedge is not a constant.** For two decades German government bonds were
-negatively correlated with equities. Since the 2022 inflation shock the correlation has been
-clearly positive, which changes the risk of every balanced portfolio.
-
-![Stock-bond correlation](docs/figures/stock_bond_correlation.png)
-
-**Normal-distribution risk models fail in the tail.** In a rolling out-of-sample test, the
-Gaussian 99 % monthly VaR was breached in 3.7 % of months instead of 1 % (Kupiec p < 0.001).
-And a 60/40 portfolio is balanced in capital, not in risk: in the ETF era about 88 % of its
-volatility came from the equity part.
-
-**Backtests need error bars.** Trend following had the highest Sharpe ratio of nine strategies
-tested since 2002, but a paired block-bootstrap confidence interval for the improvement still
-includes zero. Lump-sum investing beat 12-month dollar-cost averaging in about two out of three
-start months.
-
-![Strategy backtest](docs/figures/backtest_wealth.png)
-
-**Savings projections.** Saving 500 EUR per month for 30 years in a 60/40 portfolio, with costs
-and German taxes, gives a median of about 320,000 EUR in today's money, with a 5-95 % range of
-roughly 180,000 to 570,000 EUR (block bootstrap of history). The initial withdrawal rate that
-lasted 30 years in 95 % of scenarios was between 2.7 % and 3.2 % depending on the allocation;
-the popular 4 % rule fell well short.
-
-![Savings fan chart](docs/figures/savings_fan.png)
-
-## Verification and validation
-
-The models are tested the way a simulation code would be: against closed-form solutions,
-conservation-type identities and reference implementations, including convergence behaviour.
-Some examples:
-
-| Check | Reference |
-|---|---|
-| Monte Carlo error falls as $N^{-1/2}$; simulated wealth matches exact mean and variance under GBM | Closed form |
-| Simulated maximum drawdown of Brownian motion converges to $\sqrt{\pi/2}\,\sigma\sqrt{T}$ after a discrete-monitoring correction | Magdon-Ismail et al. (2004), Broadie et al. (1997) |
-| Lifetime German fund tax equals the flat tax on the total gain (the annual Vorabpauschale is a prepayment) | Exact identity |
-| Ledoit-Wolf shrinkage, OLS, White and Newey-West standard errors | scikit-learn, statsmodels |
-| Newey-West intervals reach nominal coverage with autocorrelated data; classical intervals do not | Simulation |
-| Expected maximum Sharpe ratio of worthless strategies; Sharpe ratio standard error | Bailey and Lopez de Prado (2014), Lo (2002) |
-| Synthetic Bund returns track German government bond ETFs; the betas order by duration | Market data |
-
-![Monte Carlo convergence](docs/figures/mc_convergence.png)
-
-The full inventory is in [notebook 8](notebooks/08_validation.ipynb); all checks run in CI.
 
 ## Quick start
 
@@ -124,7 +161,9 @@ To run the notebooks, open them in VS Code (or any Jupyter front end) and select
 | [Deutsche Bundesbank](https://www.bundesbank.de/en/statistics) | Daily 10-year German government yield |
 | [Kenneth R. French Data Library](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html) | Developed and European factor returns |
 
-Data are downloaded on first use and cached in `data/` (not part of the repository).
+European ETFs only exist since about 2009. The history before that is built from official index
+data (see [notebook 1](notebooks/01_data.ipynb)). Data are downloaded on first use and cached in
+`data/` (not part of the repository).
 
 ## Project layout
 
@@ -151,8 +190,10 @@ docs/methodology.md     equations, assumptions, limitations, references
 
 Equations, conventions, assumptions and references are in
 [docs/methodology.md](docs/methodology.md). The main limitation is sample length: about 27 years
-of monthly data contain only a few independent bear markets, so long-horizon statistics carry wide
+of monthly data contain only a few independent bear markets, so long-horizon numbers carry wide
 uncertainty. The tax model is a planning simplification.
+
+Project page: [aperret04.github.io/work/investor-toolkit.html](https://aperret04.github.io/work/investor-toolkit.html)
 
 ## License
 
