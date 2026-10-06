@@ -193,14 +193,21 @@ class BacktestResult:
 
 
 def internal_rate_of_return(flows: np.ndarray, periods_per_year: int = 12) -> float:
-    """Annualised IRR of equally spaced cash flows (negative = money invested)."""
+    """Annualised IRR of equally spaced cash flows (negative = money invested).
+
+    The per-period rate is searched in [-30 %, +100 %]; the discount factors are
+    computed in log space so long series do not overflow.
+    """
     flows = np.asarray(flows, dtype=float)
     t = np.arange(flows.size)
 
     def npv(rate: float) -> float:
-        return float(np.sum(flows / (1.0 + rate) ** t))
+        return float(np.sum(flows * np.exp(-t * np.log1p(rate))))
 
-    per_period = optimize.brentq(npv, -0.99, 10.0)
+    lo, hi = -0.3, 1.0
+    if np.sign(npv(lo)) == np.sign(npv(hi)):
+        raise ValueError("IRR not bracketed in [-30 %, +100 %] per period")
+    per_period = optimize.brentq(npv, lo, hi, xtol=1e-14)
     return float((1.0 + per_period) ** periods_per_year - 1.0)
 
 

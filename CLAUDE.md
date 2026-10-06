@@ -8,12 +8,16 @@ question:
 | Module | Question |
 |---|---|
 | `data` | Where do the prices come from, and are they clean? |
+| `proxies` | What happened before the ETFs existed (EUR series from 1999)? |
 | `returns` | What do returns look like (distribution, tails, horizon scaling)? |
 | `risk` | How bad can it get (volatility, VaR/CVaR, drawdowns)? |
 | `diversification` | Does combining assets reduce risk, and by how much? |
 | `factors` | What drives an asset's returns (factor exposures)? |
 | `backtest` | How would a strategy have performed historically? |
 | `montecarlo` | What range of outcomes can a savings plan expect? |
+
+Supporting modules: `universe` (assets and model portfolios), `resampling` (block
+bootstrap), `tax` (German fund taxation), `plotting` (figure style).
 
 ## Principles
 
@@ -34,7 +38,9 @@ question:
 
 - `src/investor_toolkit/`: package source
 - `tests/`: unit and validation tests
-- `notebooks/`: worked examples that import from the package
+- `notebooks/`: worked examples that import from the package; they write the figures in
+  `docs/figures/`
+- `docs/`: methodology and figures
 - `data/`: local download cache (git-ignored)
 
 ## Commands
@@ -43,6 +49,7 @@ question:
 uv sync                         # install environment
 uv run pytest                   # tests (offline)
 uv run pytest -m network        # tests that download data
+uv run pytest -m validation     # validation against analytical/reference results
 uv run ruff check . --fix       # lint
 uv run ruff format .            # format
 ```

@@ -69,6 +69,14 @@ def test_time_weighted_return_ignores_contributions_and_irr_matches_constant_rat
     assert saver.irr() == pytest.approx(1.01**12 - 1, rel=1e-8)
 
 
+def test_irr_is_stable_for_long_saving_histories():
+    # 50 years of monthly contributions growing at 0.5 % per month.
+    n = 600
+    flows = np.full(n + 1, -100.0)
+    flows[-1] = 100.0 * np.sum(1.005 ** np.arange(n, 0, -1))
+    assert bt.internal_rate_of_return(flows) == pytest.approx(1.005**12 - 1, rel=1e-8)
+
+
 def test_no_look_ahead(returns):
     strategy = bt.TrendFollowing({"eq": 0.6, "bd": 0.4}, cash="cash")
     base = bt.run_backtest(returns, strategy)
