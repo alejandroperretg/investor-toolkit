@@ -207,7 +207,7 @@ Equations, assumptions and references are in [docs/methodology.md](docs/methodol
 limitations section matters most: one 27-year history, a simplified tax model, pre-tax backtests
 and risk models that do not forecast volatility.
 
-Project page: [alejandroperretg.github.io/work/investor-toolkit.html](https://alejandroperretg.github.io/work/investor-toolkit.html)
+Project page: [alejandroperretg.github.io/projects/investor-toolkit](https://alejandroperretg.github.io/projects/investor-toolkit/)
 
 ## License
 

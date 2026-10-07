@@ -3,15 +3,16 @@
 The charts are drawn from the toolkit's own output and styled only through CSS classes
 defined in the site's stylesheet, so they follow its light and dark themes:
 
-* ``ax`` axis lines, ``ln`` main line, ``h`` dashed accent line, ``hb`` hidden band
+* ``ax`` axis lines, ``ln`` main line, ``h`` dashed accent line, ``hb`` shaded band
 * ``pt`` accent dot, ``pt-ink`` ink dot, ``bar`` ink bar, ``bar2`` accent bar
 * ``tk`` small muted label, ``tv`` bold value label
 
 Each chart replaces the content between ``<!-- chart:NAME -->`` and ``<!-- /chart:NAME -->``
 markers in the given HTML files::
 
-    uv run python scripts/site_charts.py <site-repo>/work/investor-toolkit.html \
-        <site-repo>/index.html
+    uv run python scripts/site_charts.py <site-repo>/pages/en/investor-toolkit.html \
+        <site-repo>/pages/es/investor-toolkit.html <site-repo>/pages/en/index.html \
+        <site-repo>/pages/es/index.html
 """
 
 import argparse
