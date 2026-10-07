@@ -5,7 +5,9 @@ defined in the site's stylesheet, so they follow its light and dark themes:
 
 * ``ax`` axis lines, ``ln`` main line, ``h`` dashed accent line, ``hb`` shaded band
 * ``pt`` accent dot, ``pt-ink`` ink dot, ``bar`` ink bar, ``bar2`` accent bar
-* ``tk`` small muted label, ``tv`` bold value label
+* ``tk`` small muted label, ``tv`` bold value label, ``hit`` invisible readout anchor
+
+Marks that carry a ``data-tip`` attribute show that text as a hover or tap readout on the site.
 
 Each chart replaces the content between ``<!-- chart:NAME -->`` and ``<!-- /chart:NAME -->``
 markers in the given HTML files::
@@ -13,9 +15,13 @@ markers in the given HTML files::
     uv run python scripts/site_charts.py <site-repo>/pages/en/investor-toolkit.html \
         <site-repo>/pages/es/investor-toolkit.html <site-repo>/pages/en/index.html \
         <site-repo>/pages/es/index.html
+
+``--returns-json PATH`` also writes the monthly return history used by the savings calculator
+on the project page.
 """
 
 import argparse
+import json
 import re
 from pathlib import Path
 
@@ -31,6 +37,11 @@ N_PATHS = 10_000
 
 def _k(value: float) -> str:
     return f"€{value / 1000:.0f}k"
+
+
+def _hit(x: float, y: float, tip: str) -> str:
+    """Invisible anchor for a readout at a data point of a line chart."""
+    return f'<circle class="hit" cx="{x:.2f}" cy="{y:.2f}" r=".6" data-tip="{tip}"/>'
 
 
 def _path(points) -> str:
@@ -93,6 +104,13 @@ def fan(long: pd.DataFrame, compact: bool) -> str:
         out.append(
             f'<text class="tk" x="{mx - 1.5:.2f}" y="{my - 2:.2f}" text-anchor="end">median {_k(median)}</text>'
         )
+        for yr in range(0, 61, 5):
+            out.append(
+                _hit(
+                    *xy(yr, pct.loc[yr, 50]),
+                    f"Year {yr}: median {_k(pct.loc[yr, 50])} · 90% range {_k(pct.loc[yr, 5])} to {_k(pct.loc[yr, 95])}",
+                )
+            )
     out.append("</svg>")
     return "".join(out)
 
@@ -136,8 +154,9 @@ def convergence() -> str:
         f'<path class="h" d="{_path(ref)}"/>',
     ]
     out += [
-        f'<circle class="pt" cx="{x:.2f}" cy="{y:.2f}" r="1"/>'
-        for x, y in (xy(n, e) for n, e in zip(sizes, rms, strict=True))
+        f'<circle class="pt" cx="{xy(n, e)[0]:.2f}" cy="{xy(n, e)[1]:.2f}" r="1" '
+        f'data-tip="{n:,} paths: error {e:.2%}"/>'
+        for n, e in zip(sizes, rms, strict=True)
     ]
     for n, label in ((100, "10²"), (1000, "10³"), (10_000, "10⁴")):
         out.append(
@@ -205,7 +224,8 @@ def futures(long: pd.DataFrame) -> str:
         stack[b] = k + 1
         cls = "pt-ink" if v < paid else "pt"
         out.append(
-            f'<circle class="{cls}" cx="{x(lo + (b + 0.5) * width):.2f}" cy="{base - k * 2.45:.2f}" r="1.05"/>'
+            f'<circle class="{cls}" cx="{x(lo + (b + 0.5) * width):.2f}" cy="{base - k * 2.45:.2f}" r="1.05" '
+            f'data-tip="One future: €{v:,.0f}"/>'
         )
     out.append("</svg>")
     return "".join(out)
@@ -249,6 +269,12 @@ def crash(long: pd.DataFrame) -> str:
         )
     out.append(f'<path class="h" d="{_path(xy(d, v) for d, v in real.items())}"/>')
     out.append(f'<path class="ln" d="{_path(xy(d, v) for d, v in nominal.items())}"/>')
+    for d in nominal.index[::6]:
+        out.append(
+            _hit(
+                *xy(d, nominal[d]), f"{d:%b %Y}: €{nominal[d]:,.0f} · today's money €{real[d]:,.0f}"
+            )
+        )
     for d, series, label, anchor, label_v in (
         (trough, nominal, f"{trough:%b %Y}: €{nominal[trough]:,.0f}", "start", 24_000),
         (back_nominal, nominal, f"back to €10k: {back_nominal:%b %Y}", "end", 31_000),
@@ -290,8 +316,10 @@ def bonds(long: pd.DataFrame) -> str:
             bx = cx + (j - 1) * 6.2 + 0.4
             top, height = (zero - r * scale, r * scale) if r > 0 else (zero, -r * scale)
             label_y = zero - r * scale - 1.0 if r > 0 else zero - r * scale + 2.8
+            name = "World stocks" if column == "world_equity" else "10-year Bunds"
             out += [
-                f'<rect class="{cls}" x="{bx:.2f}" y="{top:.2f}" width="5.4" height="{height:.2f}"/>',
+                f'<rect class="{cls}" x="{bx:.2f}" y="{top:.2f}" width="5.4" height="{height:.2f}" '
+                f'data-tip="{year} · {name}: {r:+.1%}"/>',
                 f'<text class="tv" x="{bx + 2.7:.2f}" y="{label_y:.2f}" text-anchor="middle">{r:+.0%}</text>',
             ]
         out.append(f'<text class="tk" x="{cx:.2f}" y="38.6" text-anchor="middle">{year}</text>')
@@ -325,7 +353,7 @@ def spread() -> str:
         w = (x1 - x0) * v / 0.30
         out += [
             f'<text class="tk" x="{x0 - 1.5}" y="{y + 2.9:.2f}" text-anchor="end">{label}</text>',
-            f'<rect class="bar2" x="{x0}" y="{y:.2f}" width="{w:.2f}" height="4"/>',
+            f'<rect class="bar2" x="{x0}" y="{y:.2f}" width="{w:.2f}" height="4" data-tip="{label}: {v:.1%} a year"/>',
             f'<text class="tv" x="{x0 + w + 1.2:.2f}" y="{y + 2.9:.2f}">{v:.0%}</text>',
         ]
     out.append("</svg>")
@@ -366,8 +394,10 @@ def withdrawals(long: pd.DataFrame) -> str:
         for k in range(100):
             row, col = divmod(k, 10)
             cls = "bar2" if k < lasted else "bar"
+            fate = "lasted 30 years" if k < lasted else "ran out of money"
             out.append(
-                f'<rect class="{cls}" x="{gx + col * 3.1:.2f}" y="{9 + row * 3.1:.2f}" width="2.4" height="2.4"/>'
+                f'<rect class="{cls}" x="{gx + col * 3.1:.2f}" y="{9 + row * 3.1:.2f}" width="2.4" height="2.4" '
+                f'data-tip="Withdrawing {rate:.0%}: this history {fate} ({lasted} of 100 lasted)"/>'
             )
     out.append("</svg>")
     return "".join(out)
@@ -387,6 +417,21 @@ def build_all() -> dict[str, str]:
     }
 
 
+def export_returns(path: Path) -> None:
+    """Monthly EUR returns since 1999 for the browser savings calculator."""
+    long = proxies.long_history()
+    data = {
+        "start": f"{long.index[0]:%Y-%m}",
+        "end": f"{long.index[-1]:%Y-%m}",
+        "sources": "Kenneth R. French Data Library, Deutsche Bundesbank, Eurostat HICP via FRED",
+        "world_equity": [round(float(v), 6) for v in long["world_equity"]],
+        "bund_10y": [round(float(v), 6) for v in long["bund_10y"]],
+        "inflation": [round(float(v), 6) for v in long["inflation"]],
+    }
+    path.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
+    print(f"{path}: {len(long)} months")
+
+
 def inject(html: str, charts: dict[str, str]) -> tuple[str, list[str]]:
     """Replace every ``<!-- chart:NAME -->...<!-- /chart:NAME -->`` block with the new SVG."""
     replaced = []
@@ -403,7 +448,12 @@ def inject(html: str, charts: dict[str, str]) -> tuple[str, list[str]]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("pages", nargs="+", type=Path, help="HTML files containing chart markers")
+    parser.add_argument(
+        "--returns-json", type=Path, help="also write the monthly return history here"
+    )
     args = parser.parse_args()
+    if args.returns_json:
+        export_returns(args.returns_json)
     charts = build_all()
     for page in args.pages:
         html, replaced = inject(page.read_text(encoding="utf-8"), charts)
